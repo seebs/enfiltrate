@@ -1,0 +1,34 @@
+Identifier = "LibEnfiltrate"
+
+Version = "VERSION"
+
+Email = "seebs@seebs.net"
+
+Dependencies = {
+	LibGetOpt = { "required", "before" },
+}
+Embed = { LibGetOpt = true }
+
+Name = {
+  English = "LibEnfiltrate",
+  French = "LibEnfiltrate",
+  German = "LibEnfiltrate",
+}
+NameShort = "LibEnfiltrate"
+
+-- behold the subtle nuances!
+SavedVariables = {
+  LibEnfiltrateGlobal = "global",
+  LibEnfiltrateAccount = "account",
+}
+
+Description = {
+  English = "Item filter utilities"
+}
+
+RunOnStartup = {
+  "LibEnfiltrate.lua"
+}
+
+Environment = { "1.7" }
+

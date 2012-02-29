@@ -1,0 +1,7 @@
+ToDo:
+	Some kind of user interface to filters?  Nahhh, that's crazy talk.
+
+	maybe allow addition of raw functions to filters with the caveat
+	that they break representations
+
+	Smarter about various categories

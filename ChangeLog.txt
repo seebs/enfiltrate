@@ -1,0 +1,5 @@
+2012/02/29:
+	* Move the item-specific stuff into filt.categories.item.
+
+2012/02/28:
+	* Rewrite from scratch because it was ugly.
