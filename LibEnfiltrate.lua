@@ -127,6 +127,7 @@ function Filter:new(name, category, addon)
     includes = { name = 'Includes' },
     excludes = { name = 'Excludes' },
     requires = { name = 'Requires' },
+    userdata = {},
     representation = {
       name = name,
       addon = addon,
@@ -134,16 +135,18 @@ function Filter:new(name, category, addon)
       includes = {},
       excludes = {},
       requires = {},
+      userdata = {},
     },
   }
   o.includes.representation = o.representation.includes
   o.excludes.representation = o.representation.excludes
   o.requires.representation = o.representation.requires
+  o.userdata.representation = o.representation.userdata
   Filter:bless(o)
   return o
 end
 
-function Filtercategory(newcat)
+function Filter:cat(newcat)
   local oldcat = self.category
   if newcat then
     self.category = newcat
@@ -291,18 +294,18 @@ end
 
 function Filter:match(item)
   for _, test in ipairs(self.excludes) do
-    if test(item) then
+    if test(self, item) then
       return nil
     end
   end
   for _, test in ipairs(self.requires) do
-    if not test(item) then
+    if not test(self, item) then
       return nil
     end
   end
   if #self.includes > 0 then
     for _, test in ipairs(self.includes) do
-      if test(item) then
+      if test(self, item) then
         return true
       end
     end
@@ -329,7 +332,7 @@ function Filter:apply(category, matchable, verbose)
     return false
   elseif t == 'string' then
     if string.sub(matchable, 1, 1) == '@' then
-      local code, err = loadstring("local item = ...; " .. string.sub(matchable, 2))
+      local code, err = loadstring("local self, item = ...; " .. string.sub(matchable, 2))
       if code then
 	table.insert(category, code)
 	table.insert(category.representation, matchable)
@@ -365,7 +368,7 @@ function Filter:apply(category, matchable, verbose)
   end
   -- moved to a separate place so we can fake this up
   if t == 'table' then
-    table.insert(category, function(item) return self:check_relation(item, matchable) end)
+    table.insert(category, function(self, item) return self:check_relation(item, matchable) end)
     table.insert(category.representation, matchable)
     if verbose then
       filt.printf("Added %s:", category.name)
@@ -489,7 +492,7 @@ end
 function Filter:apply_args(args, verbose)
   local changed = false
   if args.c then
-    self:category(args.c)
+    self:cat(args.c)
     changed = true
   end
   if args.i then

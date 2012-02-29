@@ -2,6 +2,8 @@
 	* Move the item-specific stuff into filt.categories.item.
 	* Clean up representation of functions -- they use a leading @.
 	* Break out apply_args so other people can use it.
+	* Add userdata and make the filter object available to match
+	  functions.
 
 2012/02/28:
 	* Rewrite from scratch because it was ugly.

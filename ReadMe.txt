@@ -6,6 +6,18 @@ and exclusions.  It also has a 'category', which is sort of sporadically
 used; the intent is that category will cause things like special rules for
 processing known fields of items, for instance.
 
+A filter has a table, .userdata, which is not used in any way by
+LibEnfiltrate.  It exists so that developers using LibEnfiltrate can
+stash additional stuff in their filters.
+
+A filter has a table, ".representation", which is stored as a SavedVariable
+if the filter is saved.  This contains corresponding subtables for each
+of includes, excludes, requires, and userdata.  For convenience, each of
+those tables has a .representation member pointing to the corresponding
+subtable.  NOTE:  LibEnfiltrate will not do anything with the .userdata
+except save and load it.  If you need to restore your .userdata after
+loading from a representation, that's up to you.
+
 In general, a filter operates on a set of items.  The result is a new
 set of items containing only those items which "match" a filter.  An
 item matches if:
@@ -21,8 +33,10 @@ Each matcher may be one of the following things:
 1.  A function.
 	To permit saving and loading of representations, functions are
 	actually passed in as strings.  Your code will be parsed as
-		local item = ...; <YOUR CODE HERE>
-	so refer to the item table for matching.
+		local self, item = ...; <YOUR CODE HERE>
+	so refer to the item table for matching.  "self" will refer to
+	the filter object.  (If you need to stash stuff, consider the
+	benefits of using self.userdata to store references.)
 
 	If you have an existing function you want to call, you can
 	call it; try something like
@@ -68,6 +82,10 @@ FILTER OPS:
 	filter:dump()
 		Pretty self-explanatory.
 
+	filter:cat(category)
+		Set filter to the given category, such as 'item' or
+		'generic'.
+
 	filter:include(matchable, verbose)
 	filter:exclude(matchable, verbose)
 	filter:require(matchable, verbose)
@@ -99,7 +117,6 @@ FILTER OPS:
 	filter:match(item)
 		Indicates whether the given item matches the
 		filter.
-
 
 	Library.LibEnfiltrate.Filter:new(name, addon, category)
 		addon defaults to 'LibEnfiltrate'
