@@ -143,7 +143,7 @@ function Filter:new(name, category, addon)
   return o
 end
 
-function Filter:type(newcat)
+function Filtercategory(newcat)
   local oldcat = self.category
   if newcat then
     self.category = newcat
@@ -326,16 +326,23 @@ function Filter:apply(category, matchable, verbose)
   local t = type(matchable)
   if t == 'function' then
     filt.printf("Can't insert raw functions in a filter.")
+    return false
   elseif t == 'string' then
-    local code, err = loadstring("local item = ...; " .. matchable)
-    if code then
-      table.insert(category, code)
-      table.insert(category.representation, matchable)
-      if verbose then
-        filt.printf("Added %s:", category.name)
-        Filter:print_one_matchable(nil, matchable)
+    if string.sub(matchable, 1, 1) == '@' then
+      local code, err = loadstring("local item = ...; " .. string.sub(matchable, 2))
+      if code then
+	table.insert(category, code)
+	table.insert(category.representation, matchable)
+	if verbose then
+	  filt.printf("Added %s:", category.name)
+	  Filter:print_one_matchable(nil, matchable)
+	end
+	return true
+      else
+        filt.printf("Trying to insert <%s>, got error: %s",
+	  matchable, err)
+        return false
       end
-      return
     else
       field, colon1, relation, colon2, value = string.match(matchable, '([^:]*)(:?)([^:]*)(:?)(.*)')
       if field then
@@ -351,9 +358,8 @@ function Filter:apply(category, matchable, verbose)
 	matchable = { field = field, relation = relation, value = value }
 	t = 'table'
       else
-        filt.printf("Trying to insert <%s>, got error: %s",
-          matchable, err)
-        return
+        filt.printf("Couldn't figure out what to do with '%s'.", matchable)
+	return false
       end
     end
   end
@@ -365,9 +371,11 @@ function Filter:apply(category, matchable, verbose)
       filt.printf("Added %s:", category.name)
       Filter:print_one_matchable(nil, matchable)
     end
+    return true
   else
     filt.printf("Can't insert object of type '%s' in a filter.", t)
   end
+  return false
 end
 
 function Filter:disapply(category, index, verbose)
@@ -379,33 +387,35 @@ function Filter:disapply(category, index, verbose)
       filt.printf("Removed %s:", category.name)
       self:print_one_matchable(nil, old)
     end
+    return true
   else
     filt.printf("No index %s to remove.", tostring(index))
+    return false
   end
 end
 
 function Filter:disinclude(index, verbose)
-  self:disapply(self.includes, index, verbose)
+  return self:disapply(self.includes, index, verbose)
 end
 
 function Filter:disexclude(index, verbose)
-  self:disapply(self.excludes, index, verbose)
+  return self:disapply(self.excludes, index, verbose)
 end
 
 function Filter:disrequire(index, verbose)
-  self:disapply(self.requires, index, verbose)
+  return self:disapply(self.requires, index, verbose)
 end
 
 function Filter:include(matchable, verbose)
-  self:apply(self.includes, matchable, verbose)
+  return self:apply(self.includes, matchable, verbose)
 end
 
 function Filter:exclude(matchable, verbose)
-  self:apply(self.excludes, matchable, verbose)
+  return self:apply(self.excludes, matchable, verbose)
 end
 
 function Filter:require(matchable, verbose)
-  self:apply(self.requires, matchable, verbose)
+  return self:apply(self.requires, matchable, verbose)
 end
 
 function Filter:print_one_matchable(index, matcher)
@@ -475,6 +485,52 @@ function Filter:load(name, addon)
   end
 end
 
+-- apply args in a semi-standard format
+function Filter:apply_args(args, verbose)
+  local changed = false
+  if args.c then
+    self:category(args.c)
+    changed = true
+  end
+  if args.i then
+    for _, value in ipairs(args.i) do
+      self:include(value, verbose)
+      changed = true
+    end
+  end
+  if args.leftover_args then
+    for _, value in ipairs(args.leftover_args) do
+      self:include(value, verbose)
+      changed = true
+    end
+  end
+  if args.r then
+    for _, value in ipairs(args.r) do
+      self:require(value, verbose)
+      changed = true
+    end
+  end
+  if args.x then
+    for _, value in ipairs(args.x) do
+      self:exclude(value, verbose)
+      changed = true
+    end
+  end
+  if args.I then
+    self:disinclude(args.I, verbose)
+    changed = true
+  end
+  if args.X then
+    self:disexclude(args.X, verbose)
+    changed = true
+  end
+  if args.R then
+    self:disexclude(args.R, verbose)
+    changed = true
+  end
+  return changed
+end
+
 -- user interface and variable management
 function filt.variables_loaded(name)
   if name == 'LibEnfiltrate' then
@@ -517,51 +573,12 @@ function filt.slashfilter(args)
       filter = Filter:new(args.f, args.c)
       filt.filters[args.f] = filter
     end
-    if args.c then
-      filter:type(args.c)
-    end
   else
     filter = Filter:new('temp', args.c)
     temporary = true
   end
   if filter then
-    local changed = false
-    if args.i then
-      for _, value in ipairs(args.i) do
-        filter:include(value, true)
-	changed = true
-      end
-    end
-    if args.leftover_args then
-      for _, value in ipairs(args.leftover_args) do
-        filter:include(value, true)
-	changed = true
-      end
-    end
-    if args.r then
-      for _, value in ipairs(args.r) do
-        filter:require(value, true)
-	changed = true
-      end
-    end
-    if args.x then
-      for _, value in ipairs(args.x) do
-        filter:exclude(value, true)
-	changed = true
-      end
-    end
-    if args.I then
-      filter:disinclude(args.I, true)
-      changed = true
-    end
-    if args.X then
-      filter:disexclude(args.X, true)
-      changed = true
-    end
-    if args.R then
-      filter:disexclude(args.R, true)
-      changed = true
-    end
+    local changed = filter:apply_args(args, true)
     if changed and not temporary then
       filt.printf("Saving changes.")
       filter:save()

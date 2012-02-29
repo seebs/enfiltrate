@@ -2,9 +2,9 @@ LibEnfiltrate is a generic filtering tool intended to work with the common
 result format of Inspect.*.Detail.
 
 A filter consists of three classes of things; inclusions, requirements,
-and exclusions.  It also has a 'type', which is sort of sporadically used;
-the intent is that type will cause things like special rules for processing
-known fields of items, for instance.
+and exclusions.  It also has a 'category', which is sort of sporadically
+used; the intent is that category will cause things like special rules for
+processing known fields of items, for instance.
 
 In general, a filter operates on a set of items.  The result is a new
 set of items containing only those items which "match" a filter.  An
@@ -28,7 +28,6 @@ Each matcher may be one of the following things:
 	call it; try something like
 		return MyAddon.MyFunc(item)
 
-
 2.  A relation.
 
 	A relation is a table:
@@ -40,8 +39,22 @@ Each matcher may be one of the following things:
 	greater than 3.
 
 	Which members are meaningful depends on the category.  In theory,
-	type information will be getting added for various categories.
+	information about fields will be getting added for various categories.
 
+When adding filters (using include/exclude/require), you can use the
+raw table format, or you can use a string.  If the string starts with an
+@, the remainder of the string is treated as a function.  Otherwise, the
+string is interpreted as a relation, as follows:
+
+	* If the string contains at least two colons, it is understood
+	  to be field:relation:value.  (value may contain colons.)
+	* If the string contains exactly one colon, it is understood to
+	  be field:value.  The relation used defaults to ==, unless
+	  there are other rules for the specific field in the
+	  category-specific information.  ('generic' has a rule that
+	  the field 'name' implies a 'match' operator.)
+	* If there are no colons, it is understood to be a value, with
+	  field 'name' and operator 'match'.
 
 FILTER OPS:
 	filter:save()
@@ -58,12 +71,27 @@ FILTER OPS:
 	filter:include(matchable, verbose)
 	filter:exclude(matchable, verbose)
 	filter:require(matchable, verbose)
-		Add "matchable" to the given category.
+		Add "matchable" to the given ruleset.  Returns true on
+		success, false on error.
 
 	filter:disinclude(index, verbose)
 	filter:disexclude(index, verbose)
 	filter:disrequire(index, verbose)
-		Remove item index from the given category.
+		Remove item index from the given ruleset.  Returns true on
+		success, false on error.
+
+	filter:apply_args(args, verbose)
+		Applies the provided args.  Args are in the format used
+		by LibGetopt.
+		  Tables:
+		    args.i:  Each item added to includes
+		    args.x:  Each item added to excludes
+		    args.r:  Each item added to requires
+		  Individual values:
+		    args.c:  Change filter's category
+		    args.I:  Index to remove from includes
+		    args.R:  Index to remove from requires
+		    args.X:  Index to remove from excludes
 
 	filter:filter(table)
 		Returns a table of items which matched the
@@ -72,9 +100,10 @@ FILTER OPS:
 		Indicates whether the given item matches the
 		filter.
 
-	Library.LibEnfiltrate.Filter:new(name, addon, type)
+
+	Library.LibEnfiltrate.Filter:new(name, addon, category)
 		addon defaults to 'LibEnfiltrate'
-		type defaults to 'generic'
+		category defaults to 'generic'
 
 	Library.LibEnfiltrate.Filter:from_representation(table)
 		Recreates a filter from the given representation table.
