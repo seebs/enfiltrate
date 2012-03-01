@@ -75,7 +75,7 @@ filt.categories = {
     },
 
     field_relations = {
-      name = 'match',
+      name = '~',
       rarity = '>=',
     },
 
@@ -92,7 +92,7 @@ filt.categories = {
     },
 
     field_relations = {
-      name = 'match'
+      name = '~'
     },
 
     defaults = {
@@ -178,8 +178,7 @@ end
 
 function Filter:from_representation(representation)
   if type(representation) == 'table' then
-    local name = representation.name
-    local filter = Filter:new(name, representation.category)
+    local filter = Filter:new(representation.name, representation.category)
     if representation.includes then
       for _, value in ipairs(representation.includes) do
         filter:include(value)
@@ -253,8 +252,12 @@ function Filter:relop(relop, value1, value2)
     return value1 == value2
   elseif relop == '~=' or relop == '!=' then
     return value1 ~= value2
-  elseif relop == 'match' then
-    return string.match(value1, value2)
+  elseif relop == 'match' or relop == '~' then
+    if type(value1) == 'string' and type(value2) == 'string' then
+      return string.match(value1, value2)
+    else
+      return false
+    end
   else
     -- relationals have extra requirements
 
@@ -357,12 +360,16 @@ function Filter:apply(category, matchable, verbose)
         return false
       end
     else
-      field, colon1, relation, colon2, value = string.match(matchable, '([^:]*)(:?)([^:]*)(:?)(.*)')
+      local field, colon1, relation, colon2, value = string.match(matchable, '([^:]*)(:?)([^:]*)(:?)(.*)')
       if field then
         if not colon1 or colon1 == '' then
-	  value = field
-	  field = 'name'
-	  relation = 'match'
+	  -- check for name==value type things
+	  field, relation, value = string.match(matchable, '(%a+)%s*([<>~=]=?)%s*(.*)')
+	  if not field then
+	    value = matchable
+	    field = 'name'
+	    relation = '~'
+	  end
 	elseif not colon2 or colon2 == '' then
 	  value = relation
 	  relation = knowledge.field_relations[field] or '=='
@@ -521,7 +528,7 @@ function Filter:apply_args(args, verbose)
   end
   if args.leftover_args then
     for _, value in ipairs(args.leftover_args) do
-      self:include(value, verbose)
+      self:require(value, verbose)
       changed = true
     end
   end

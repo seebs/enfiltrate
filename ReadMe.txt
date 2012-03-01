@@ -66,9 +66,24 @@ string is interpreted as a relation, as follows:
 	  be field:value.  The relation used defaults to ==, unless
 	  there are other rules for the specific field in the
 	  category-specific information.  ('generic' has a rule that
-	  the field 'name' implies a 'match' operator.)
+	  the field 'name' implies a '~' operator.)
+	* If there's no colons, it's checked for whether it might
+	  look like field<op>value, where <op> is one of the operators
+	  recognized.  Whitespace surrounding <op> is discarded.  The
+	  "match" operator isn't recognized, but "~" is.
 	* If there are no colons, it is understood to be a value, with
-	  field 'name' and operator 'match'.
+	  field 'name' and operator '~'.
+
+RELATIONAL OPERATORS:
+	==, =
+		equality
+	!=, ~=
+		inequality
+	<, >, <=, >=
+		less-than/greater-than (or equal)
+	match, ~
+		string.match(field, value)
+		Note that "value" is actually a lua pattern.
 
 FILTER OPS:
 	filter:save()
@@ -140,7 +155,7 @@ FILTER OPS:
 
 
 SLASH COMMAND:
-	/enfilt [opts]
+	/enfilt [opts] [conditions]
 		-i <condition>:  add to includes
 		-x <condition>:  add to excludes
 		-r <condition>:  add to requires
@@ -154,6 +169,9 @@ SLASH COMMAND:
 		-z:  Run on Inspect.Item.Detail(inventory)
 		-c <category>:  use named category (only "item" works)
 		-v:  print version info
+
+	Extra conditions specified after options are treated as
+	requires.
 
 COMING IN THE FUTURE:
 	More logic for various categories.
