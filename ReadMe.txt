@@ -118,12 +118,20 @@ FILTER OPS:
 		Indicates whether the given item matches the
 		filter.
 
+	Library.LibEnfiltrate.Filter:argstring()
+		Returns a string (for LibGetopt) of arguments known
+		to the filter code.
+
 	Library.LibEnfiltrate.Filter:new(name, addon, category)
 		addon defaults to 'LibEnfiltrate'
 		category defaults to 'generic'
 
 	Library.LibEnfiltrate.Filter:from_representation(table)
 		Recreates a filter from the given representation table.
+
+	Library.LibEnfiltrate.Filter:list(addon)
+		Returns a table of the addon representations stored
+		for the given addon.
 
 	Library.LibEnfiltrate.Filter:load(name, addon)
 		Load the named item from the stored filters

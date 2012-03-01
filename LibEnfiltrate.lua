@@ -117,6 +117,10 @@ function Filter:bless(filter)
   setmetatable(filter, self)
 end
 
+function Filter:filter_p(filter)
+  return getmetatable(filter) == self
+end
+
 function Filter:new(name, category, addon)
   category = category or 'generic'
   local o = {
@@ -158,8 +162,14 @@ function Filter:cat(newcat)
 end
 
 function Filter:save()
+  if not self.name then
+    filt.printf("Can't save an unnamed filter.")
+    return
+  end
   if self.addon then
-    LibEnfiltrateGlobal.filters[self.addon] = LibEnfiltrateGlobal['filters'][self.addon] or {}
+    if not LibEnfiltrateGlobal.filters[self.addon] then
+      LibEnfiltrateGlobal['filters'][self.addon] = {}
+    end
     LibEnfiltrateGlobal.filters[self.addon][self.name] = self.representation
   else
     LibEnfiltrateGlobal.filters['LibEnfiltrate'][self.name] = self.representation
@@ -479,6 +489,14 @@ function Filter:delete()
   filt.printf("Removed %s from filters.", self.name)
 end
 
+function Filter:list(addon)
+  addon = addon or 'LibEnfiltrate'
+  if not LibEnfiltrateGlobal.filters[addon] then
+    LibEnfiltrateGlobal.filters[addon] = {}
+  end
+  return LibEnfiltrateGlobal.filters[addon]
+end
+
 function Filter:load(name, addon)
   addon = addon or 'LibEnfiltrate'
   if LibEnfiltrateGlobal.filters[addon] and LibEnfiltrateGlobal.filters[addon][name] then
@@ -532,6 +550,10 @@ function Filter:apply_args(args, verbose)
     changed = true
   end
   return changed
+end
+
+function Filter:argstring()
+  return "c:i:+I#r:+R#x:+X#"
 end
 
 -- user interface and variable management
@@ -631,4 +653,4 @@ function filt.slashfilter(args)
 end
 
 table.insert(Event.Addon.SavedVariables.Load.End, { filt.variables_loaded, "LibEnfiltrate", "variable loaded hook" })
-Library.LibGetOpt.makeslash("a:c:dDf:i:+I#r:+R#vx:+X#z", "LibEnfiltrate", "enfilt", filt.slashfilter)
+Library.LibGetOpt.makeslash(Filter:argstring() .. "a:dDf:vz", "LibEnfiltrate", "enfilt", filt.slashfilter)

@@ -4,6 +4,7 @@
 	* Break out apply_args so other people can use it.
 	* Add userdata and make the filter object available to match
 	  functions.
+	* Add argstring() for convenience to other addons.
 
 2012/02/28:
 	* Rewrite from scratch because it was ugly.
